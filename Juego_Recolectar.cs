@@ -9,6 +9,8 @@ public class Juego_Recolectar : MonoBehaviour
     public int cantRecoleccion = 0;
     public GameObject jugadorUno;  // Asigna el objeto del jugador uno desde el Inspector
     public GameObject jugadorDos;  // Asigna el objeto del jugador dos desde el Inspector
+    // Referencia opcional al script que sigue al jugador (si existe en la cámara o en un objeto)
+    public FollowCharacter followScript;
     public AudioClip[] restarCantidadSounds;
     public AudioClip[] sumarCantidadSounds;
     private AudioSource fuenteAudio;
@@ -73,7 +75,19 @@ public class Juego_Recolectar : MonoBehaviour
         jugadorDos.SetActive(true);
         jugadorDos.transform.position = posicionActual;
 
-        Destroy(jugadorUno);    
+        // Reasignar referencia en el script que sigue al jugador, si está presente
+        if (followScript != null && jugadorDos != null)
+        {
+            // Si followScript apuntaba a jugadorUno o está vacío, reemplazamos por jugadorDos
+            if (followScript.player == null || (followScript.player != null && followScript.player.gameObject == jugadorUno))
+            {
+                followScript.player = jugadorDos.transform;
+                followScript.secondPlayer = null;
+            }
+        }
+
+        // Destruir el jugadorUno con un pequeño delay para dar tiempo a que otros componentes actualicen referencias
+        Destroy(jugadorUno, 0.1f);
         // // Actualizar la cámara virtual de Cinemachine para seguir y mirar al jugadorDos
         // if (virtualCamera != null)
         // {
