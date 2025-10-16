@@ -8,9 +8,10 @@ public class Juego_Recolectar : MonoBehaviour
 {
     public int cantRecoleccion = 0;
     public GameObject jugadorUno;  // Asigna el objeto del jugador uno desde el Inspector
-    public GameObject jugadorDos;  // Asigna el objeto del jugador dos desde el Inspector
-    // Referencia opcional al script que sigue al jugador (si existe en la cámara o en un objeto)
+    public GameObject jugadorDos;
     public FollowCharacter followScript;
+    // Nuevo: controlador central de cámara (recomendado)
+    public CameraController cameraController;
     public AudioClip[] restarCantidadSounds;
     public AudioClip[] sumarCantidadSounds;
     private AudioSource fuenteAudio;
@@ -75,10 +76,15 @@ public class Juego_Recolectar : MonoBehaviour
         jugadorDos.SetActive(true);
         jugadorDos.transform.position = posicionActual;
 
-        // Reasignar referencia en el script que sigue al jugador, si está presente
+        // Notificar al CameraController central para cambiar el objetivo y reproducir efectos
+        if (cameraController != null)
+        {
+            cameraController.SetTarget(jugadorDos.transform, true);
+        }
+
+        // Reasignar tambien al followScript antiguo por compatibilidad
         if (followScript != null && jugadorDos != null)
         {
-            // Si followScript apuntaba a jugadorUno o está vacío, reemplazamos por jugadorDos
             if (followScript.player == null || (followScript.player != null && followScript.player.gameObject == jugadorUno))
             {
                 followScript.player = jugadorDos.transform;
