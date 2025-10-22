@@ -23,34 +23,58 @@ public class Move_Fisicas : MonoBehaviour
         fuenteAudio = GetComponent<AudioSource>();
     }
 
+    // Reemplaza el $SELECTION_PLACEHOLDER$ por este código
+
+    [SerializeField] float moveForce = 1000f;
+    [SerializeField] float maxSpeed = 8f;
+
     void Update()
     {
-        if (Input.GetKey("left") || Input.GetKey("a"))
-        {
-            gameObject.GetComponent<Rigidbody>().AddForce(new Vector3(0, 0, 1000f * Time.deltaTime), ForceMode.Acceleration);
-        }
-        if (Input.GetKey("right") || Input.GetKey("d"))
-        {
-            gameObject.GetComponent<Rigidbody>().AddForce(new Vector3(0, 0, -1000f * Time.deltaTime), ForceMode.Acceleration);
-        }
-
-        if (Input.GetKey("up") || Input.GetKey("w"))
-        {
-            gameObject.GetComponent<Rigidbody>().AddForce(new Vector3(1000f * Time.deltaTime, 0, 0), ForceMode.Acceleration);
-        }
-
-        if (Input.GetKey("down") || Input.GetKey("s"))
-        {
-            gameObject.GetComponent<Rigidbody>().AddForce(new Vector3(-1000f * Time.deltaTime, 0, 0), ForceMode.Acceleration);
-        }
-
-        //aplico fuerza de gravedad
-        if (countSalto > 1 && countSalto < 4)
-            gameObject.GetComponent<Rigidbody>().AddForce(Vector3.down * 20f, ForceMode.Acceleration);
-
+        // Mantener salto en Update para capturar GetKeyDown correctamente
         salto();
-        print(countSalto);
+        // Opcional: depuración mínima
+        // print(countSalto);
+    }
 
+    void FixedUpdate()
+    {
+        Rigidbody rb = gameObject.GetComponent<Rigidbody>();
+        if (rb == null) return;
+
+        // Entrada más suave y que incluye flechas y WASD
+        float h = Input.GetAxis("Horizontal"); // A/D, <- ->
+        float v = Input.GetAxis("Vertical");   // W/S, ^ v
+
+        // Dirección relativa a la cámara (ignora componente Y)
+        Transform cam = Camera.main != null ? Camera.main.transform : null;
+        Vector3 moveDir;
+        if (cam != null)
+        {
+            Vector3 camForward = Vector3.Scale(cam.forward, new Vector3(1, 0, 1)).normalized;
+            Vector3 camRight = Vector3.Scale(cam.right, new Vector3(1, 0, 1)).normalized;
+            moveDir = camRight * h + camForward * v;
+            if (moveDir.sqrMagnitude > 1f) moveDir.Normalize();
+        }
+        else
+        {
+            // Fallback: usar eje del mundo
+            moveDir = new Vector3(v, 0, h);
+        }
+
+        // Aplicar fuerza de movimiento (manteniendo sistema físico)
+        rb.AddForce(moveDir * moveForce * Time.fixedDeltaTime, ForceMode.Acceleration);
+
+        // Fuerza extra de "caída" cuando está en salto doble (mantener lógica existente)
+        if (countSalto > 1 && countSalto < 4)
+            rb.AddForce(Vector3.down * 20f * Time.fixedDeltaTime, ForceMode.Acceleration);
+
+        // Limitar velocidad horizontal para mejorar control
+        Vector3 horizVel = new Vector3(rb.linearVelocity.x, 0f, rb.linearVelocity.z);
+        if (horizVel.magnitude > maxSpeed)
+        {
+            Vector3 limited = horizVel.normalized * maxSpeed;
+            rb.linearVelocity = new Vector3(limited.x, rb.linearVelocity.y, limited.z);
+        }
     }
 
     void salto()
